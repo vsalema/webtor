@@ -1,0 +1,51 @@
+/* Webtor layer overlay (no iframe nesting) */
+
+.webtor-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  z-index: 4; /* above iframe-overlay (z=3) */
+  background: radial-gradient(circle at center, #02050a 0, #000 65%);
+}
+
+.webtor-overlay.hidden { display: none; }
+
+.webtor-overlay .webtor-host {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.webtor-overlay .webtor-status {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  z-index: 5;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(0,0,0,.55);
+  color: rgba(255,255,255,.9);
+  max-width: min(560px, calc(100vw - 20px));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.tag-chip--torrent{
+  border-color: var(--tron-accent-soft);
+  color: var(--tron-accent-soft);
+}
+
+.torrent-empty{
+  text-align:center;
+  padding: 14px 10px;
+  color: var(--tron-muted);
+  font-size: 12px;
+}

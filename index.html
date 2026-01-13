@@ -1,0 +1,338 @@
+<script>
+  window.aclib = {
+    runPop: function() {
+      console.warn("aclib.runPop a été bloqué");
+    }
+  };
+</script>
+
+
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tron Ares IPTV Player</title>
+
+  <!-- Police futuriste -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap" rel="stylesheet">
+
+  <!-- HLS & DASH -->
+  <script defer src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/dashjs@latest/dist/dash.all.min.js"></script>
+
+  <link rel="stylesheet" href="tron-ares.balanced.fixcls.css">
+</head>
+<body>
+<div class="app-shell" id="appShell">
+  <!-- Sidebar: playlists -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Playlist Grid</div>
+      <div class="status-pill" id="statusPill">Idle</div>
+    </div>
+<div class="tabs">
+  <button class="tab-btn" data-tab="fr">
+    <span>🇫🇷</span>Chaînes FR M3U
+  </button>
+
+  <button class="tab-btn active" data-tab="channels">
+    <span>🎥</span>Film M3U
+  </button>
+
+  <button class="tab-btn" data-tab="iframes">
+    <span>■</span> 🇵🇹 port / iFrame
+  </button>
+
+  <button class="tab-btn" data-tab="favorites">
+    <span>★</span> Favoris
+  </button>
+</div>
+<div class="search-row">
+  <div class="search-bar">
+    <div class="search-wrapper">
+      <input id="globalSearchInput" class="input search-input"
+             placeholder="Rechercher (toutes listes)…" />
+      <button id="clearSearchBtn" class="clear-search-btn">✖</button>
+    </div>
+    <button id="verifyLinksBtn" class="btn btn-ghost" title="Vérifie les liens visibles (liste active)">Vérifier liens</button>
+  </div>
+</div>
+<!-- Mini player radio R.Alfa -->
+
+<div id="miniRadioPlayer" class="mini-radio">
+  <img class="mini-radio-logo" src="https://vsalema.github.io/ipodfm/img/Radio_Alfa.png" loading="lazy" decoding="async">
+
+  <div class="mini-radio-info">
+    <div class="mini-radio-title">R.Alfa</div>
+    <div class="mini-radio-rds">Hit Music Only</div>
+  </div>
+
+  <!-- Fake visualizer -->
+  <div class="mini-radio-viz" id="miniRadioViz">
+    <span class="mini-radio-viz-bar"></span>
+    <span class="mini-radio-viz-bar"></span>
+    <span class="mini-radio-viz-bar"></span>
+    <span class="mini-radio-viz-bar"></span>
+  </div>
+
+  <button id="radioPlayBtn" class="mini-radio-btn" data-luna-url="https://vsalema.github.io/luna/">▶</button>
+</div>
+<!-- Bouton Derniers ajouts (Films uniquement) -->
+<div id="newAdditionsContainer" class="hidden">
+  <button id="newAdditionsBtn" class="btn btn-accent" type="button">🆕 Derniers ajouts</button>
+</div>
+
+  
+    <div class="lists-container">
+  <div class="scroll-fade"></div>
+
+  <!-- FR d'abord et active -->
+  <div class="list active" id="channelFrList"></div>
+
+  <!-- Films ensuite -->
+  <div class="list" id="channelList"></div>
+
+  <div class="list" id="iframeList"></div>
+  <div class="list" id="favoriteList"></div>
+</div>
+<div class="loader-panel">
+
+  <!-- SECTION 1 : Charger une playlist ou une source -->
+  <div class="loader-section" data-section="playlist">
+    <div class="loader-label collapsible-label">
+      <span>Charger une playlist ou une source</span>
+      <span class="loader-toggle-icon">▸</span>
+    </div>
+
+    <div class="loader-section-body">
+      <div class="loader-row">
+        <input id="urlInput" class="input" placeholder="URL d'un flux ou d'une playlist M3U…" />
+        <button class="btn btn-ghost" id="loadUrlBtn">Charger</button>
+      </div>
+      <div class="loader-subrow">
+        <span>HTTP(S), M3U, HLS, MP4, MP3, YouTube…</span>
+      </div>
+
+      <div class="loader-row">
+        <input type="file" id="fileInput" class="file-input"
+               accept=".m3u,.m3u8,.mp4,.mp3,.mpd,.ts,.aac,.flv,.mov,video/*,audio/*" />
+        <button class="btn btn-ghost" id="openFileBtn">Ouvrir un fichier local</button>
+      </div>
+      <div class="loader-subrow">
+        <span id="fileNameLabel">Aucun fichier sélectionné</span>
+      </div>
+
+      <div class="loader-label" style="margin-top:4px;">Ajouter un overlay iFrame</div>
+      <div class="loader-row">
+        <input id="iframeTitleInput" class="input" placeholder="Titre overlay / site / widget…" />
+      </div>
+      <div class="loader-row">
+        <input id="iframeUrlInput" class="input" placeholder="URL iFrame ou vidéo YouTube…" />
+        <button class="btn btn-accent" id="addIframeBtn">+ Ajouter</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2 : JSON M3U / iFrame -->
+  <div class="loader-section" data-section="json">
+    <div class="loader-label collapsible-label">
+      <span>JSON M3U / iFrame</span>
+      <span class="loader-toggle-icon">▸</span>
+    </div>
+
+    <div class="loader-section-body">
+      <div class="loader-row">
+        <button class="btn btn-ghost" id="exportM3uJsonBtn">Export M3U → JSON</button>
+        <button class="btn btn-ghost" id="exportIframeJsonBtn">Export iFrame → JSON</button>
+      </div>
+      <div class="loader-row">
+        <button class="btn btn-accent" id="importJsonBtn">Importer JSON</button>
+      </div>
+      <div class="loader-row">
+        <textarea id="jsonArea" class="input"
+                  style="height:80px; resize:vertical; font-family:monospace; border-radius:12px;"
+                  placeholder="Colle ici le JSON à importer, ou regarde le JSON exporté…"></textarea>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+    
+  </aside>
+
+  <!-- Main: player -->
+  <main class="main">
+    <div class="top-bar">
+      <div class="top-bar-left">
+        <!-- tu peux mettre des infos ici plus tard si tu veux -->
+      </div>
+
+      <!-- Banner tron Ares centré (ne change pas la hauteur) -->
+      <div class="top-bar-banner">
+        <img src="https://vsalema.github.io/tvpt4/css/tron3.png"
+             width="1399" height="471"
+             decoding="async" fetchpriority="high"
+             alt="Tron Ares IPTV Player"
+             class="banner-img">
+      </div>
+
+      <div class="top-bar-right">
+        <button class="btn btn-ghost" id="themeToggleBtn">Thème : Cyan/Orange</button>
+        <button class="btn btn-ghost" id="fxToggleBtn">FX Tron+</button>
+        <button class="btn btn-ghost" id="pipToggleBtn">PiP</button>
+        <button class="btn btn-ghost btn-icon" id="openStreamUrlBtn" title="Tester un Stream URL">🔗</button>
+        <button class="btn btn-ghost" id="toggleOverlayBtn">Vidéo / iFrame</button>
+        <button class="btn btn-ghost" id="fullPageBtn">Plein écran</button>
+        <button class="toggle-sidebar-btn" id="toggleSidebarBtn" aria-label="Menu sidebar">
+          <span class="burger-center"></span>
+        </button>
+      </div>
+    </div>
+
+    <section class="player-shell player-grid-lines" id="playerContainer">
+      <div class="player-inner">
+        <video id="videoEl" controls preload="metadata"></video>
+        <div class="iframe-overlay hidden" id="iframeOverlay">
+          <iframe id="iframeEl" allowfullscreen></iframe>
+        </div>
+      </div>
+    </section>
+<!-- RADIO FULLSCREEN INSIDE PLAYER -->
+<div id="radioPanel" class="radio-panel hidden" aria-hidden="true">
+  <button id="radioPanelClose" class="radio-panel-close" title="Retour diffusion">✕</button>
+
+  <div class="radio-panel-card">
+    <div class="radio-panel-header">
+      <div class="radio-panel-logo-wrap">
+        <img class="radio-panel-logo"
+             src="https://vsalema.github.io/ipodfm/img/Radio_Alfa.png" loading="lazy" decoding="async"
+             alt="Radio Alfa">
+      </div>
+      <div class="radio-panel-meta">
+        <div class="radio-panel-title">R.Alfa</div>
+        <div class="radio-panel-sub">Hit Music Only</div>
+      </div>
+    </div>
+
+    <div class="radio-panel-viz" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <div class="radio-panel-actions">
+      <button id="radioPanelPlay" class="radio-panel-btn radio-panel-btn-primary">⏸ Pause</button>
+      <button id="radioPanelBack" class="radio-panel-btn">↩ Retour diffusion</button>
+    </div>
+  </div>
+</div>
+
+    <footer class="bottom-bar">
+      <button class="nav-btn" id="prevBtn">
+        <span class="nav-label-arrow">◀</span>
+        Prev
+      </button>
+
+      <div class="now-playing" id="nowPlaying">
+  <div class="np-logo" id="npLogo"></div>
+  <div class="np-text">
+    <div class="np-title" id="npTitle">Aucune chaîne sélectionnée</div>
+    <div class="np-sub" id="npSub">Choisissez une chaîne dans la liste</div>
+  </div>
+  <div class="np-badge" id="npBadge">IDLE</div>
+  <div class="np-counter" id="npCounter">-/-</div>
+
+  <!-- Actions (Cast, etc.) -->
+  <div class="np-actions" id="npActions">
+    <google-cast-launcher
+      id="castLauncher"
+      class="icon-btn np-action-btn cast-launcher cast-btn"
+      title="Chromecast"
+      aria-label="Chromecast"></google-cast-launcher>
+  </div>
+
+  <!-- Nouveau bloc contrôles films (channelList) -->
+  <div class="np-tracks" id="npTracks">
+
+    <!-- Bouton Audio -->
+    <div class="np-track-group" id="audioGroup">
+      <button class="icon-btn np-track-btn" id="audioTrackBtn" title="Changer la piste audio">
+        🔊
+      </button>
+      <div class="np-track-menu" id="audioTrackMenu"></div>
+    </div>
+
+    <!-- Bouton Sous-titres -->
+    <div class="np-track-group" id="subtitleGroup">
+      <button class="icon-btn np-track-btn" id="subtitleTrackBtn" title="Sous-titres">
+        💬
+      </button>
+      <div class="np-track-menu" id="subtitleTrackMenu"></div>
+    </div>
+
+  </div>
+</div>
+
+
+      <button class="nav-btn" id="nextBtn">
+        Next
+        <span class="nav-label-arrow">▶</span>
+      </button>
+
+      <div class="helper-text">
+        Next / Prev changent la chaîne <span>M3U</span> active.
+      </div>
+    </footer>
+  
+</main>
+</div>
+
+<!-- STREAM URL (Akamai-style) -->
+<div id="streamUrlOverlay" class="streamurl-overlay hidden" aria-hidden="true">
+  <div class="streamurl-card" role="dialog" aria-modal="true" aria-label="Stream URL">
+    <div class="streamurl-header">
+      <div class="streamurl-title">Stream URL</div>
+      <button id="streamUrlCloseBtn" class="streamurl-close" title="Fermer">✕</button>
+    </div>
+
+    <label class="streamurl-label" for="streamUrlInput">URL</label>
+    <input id="streamUrlInput" class="streamurl-input" type="url" inputmode="url"
+           placeholder="https://…/master.m3u8 (ou .mpd / mp3 / aac)">
+
+    <label class="streamurl-label" for="streamTitleInput">Titre (option)</label>
+    <input id="streamTitleInput" class="streamurl-input" type="text" placeholder="Nom affiché">
+
+    <div class="streamurl-actions">
+      <button id="streamUrlPlayBtn" class="btn btn-accent">Play</button>
+      <button id="streamUrlCopyBtn" class="btn btn-ghost">Copier lien</button>
+    </div>
+
+    <div class="streamurl-hint">Astuce : tu peux aussi ouvrir directement <span>?streamUrl=…</span></div>
+  </div>
+</div>
+
+
+<script defer src="tron-ares.ios-inline.js"></script>
+
+<script defer type="text/javascript" src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  var scripts = document.querySelectorAll("script[src*='aclib']");
+
+  scripts.forEach(function(s) {
+    s.parentNode.removeChild(s);
+    console.log("Script acLib supprimé :", s.src);
+  });
+});
+</script>
+<script>
+if (typeof aclib !== "undefined") {
+  aclib.runPop = function() {
+    console.warn("aclib.runPop bloqué par l'utilisateur");
+  };
+}
+</script>
+</body>
+</html>
